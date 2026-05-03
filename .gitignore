@@ -1,0 +1,24 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Virtual environments
+env/
+.venv/
+venv/
+
+# Local environment files
+.env
+
+# OS/editor clutter
+.DS_Store
+.claude/
+
+# Generated data and caches
+data/raw/
+data/processed/
+
+# Test and coverage artifacts
+.coverage
+htmlcov/
