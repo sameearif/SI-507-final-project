@@ -195,53 +195,51 @@ if page == "Search & Neighbourhood":
         "Search for a movie and explore its nearest connections in the graph."
     )
 
-    query = st.text_input("Search movies", placeholder="e.g. Inception")
+    selected_title = st.selectbox(
+        "Search movies",
+        options,
+        index=None,
+        placeholder="Start typing a movie title…",
+        key="search_movie",
+    )
     depth = st.slider("Neighbourhood depth", 1, 2, 1)
 
-    if query:
-        hits = alg.search_movies(movies, query, max_results=15)
-        if not hits:
-            st.warning("No movies found. Try a different search term.")
-        else:
-            selected_title = st.selectbox(
-                "Select a movie",
-                [m.display_title() for m in hits],
-            )
-            selected = next((m for m in hits if m.display_title() == selected_title), None)
+    if selected_title:
+        selected = _find_movie(selected_title)
 
-            if selected:
-                st.divider()
-                _movie_card(selected)
-                st.divider()
+        if selected:
+            st.divider()
+            _movie_card(selected)
+            st.divider()
 
-                if selected.movie_id not in G:
-                    st.info("This movie has no graph connections (insufficient data).")
-                else:
-                    sub = alg.get_neighborhood(G, selected.movie_id, depth=depth, max_nodes=40)
-                    n_neighbours = sub.number_of_nodes() - 1
-                    st.markdown(f"**{n_neighbours}** connected movies (depth {depth})")
-                    st.plotly_chart(
-                        viz.draw_neighborhood(sub, selected.movie_id, height=480),
-                        use_container_width=True,
+            if selected.movie_id not in G:
+                st.info("This movie has no graph connections (insufficient data).")
+            else:
+                sub = alg.get_neighborhood(G, selected.movie_id, depth=depth, max_nodes=40)
+                n_neighbours = sub.number_of_nodes() - 1
+                st.markdown(f"**{n_neighbours}** connected movies (depth {depth})")
+                st.plotly_chart(
+                    viz.draw_neighborhood(sub, selected.movie_id, height=480),
+                    use_container_width=True,
+                )
+
+                st.subheader("Direct neighbours")
+                neighbours = []
+                for nb in G.neighbors(selected.movie_id):
+                    nb_movie: Movie = G.nodes[nb]["movie"]
+                    rel = G[selected.movie_id][nb].get("relationship")
+                    neighbours.append(
+                        {
+                            "Movie": nb_movie.display_title(),
+                            "Genres": nb_movie.genre_str(),
+                            "Similarity": f"{G[selected.movie_id][nb]['weight']:.3f}",
+                            "Connection": rel.describe() if rel else "—",
+                        }
                     )
-
-                    st.subheader("Direct neighbours")
-                    neighbours = []
-                    for nb in G.neighbors(selected.movie_id):
-                        nb_movie: Movie = G.nodes[nb]["movie"]
-                        rel = G[selected.movie_id][nb].get("relationship")
-                        neighbours.append(
-                            {
-                                "Movie": nb_movie.display_title(),
-                                "Genres": nb_movie.genre_str(),
-                                "Similarity": f"{G[selected.movie_id][nb]['weight']:.3f}",
-                                "Connection": rel.describe() if rel else "—",
-                            }
-                        )
-                    neighbours.sort(key=lambda r: r["Similarity"], reverse=True)
-                    st.dataframe(neighbours, use_container_width=True, height=280)
+                neighbours.sort(key=lambda r: r["Similarity"], reverse=True)
+                st.dataframe(neighbours, use_container_width=True, height=280)
     else:
-        st.info("Type a movie title above to begin exploring.")
+        st.info("Start typing above to find a movie and explore its neighbourhood.")
 
 
 # ===========================================================================
